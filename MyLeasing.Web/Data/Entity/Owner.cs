@@ -10,7 +10,10 @@ namespace MyLeasing.Web.Data.Entity
         public string Document { get; set; }
 
         [Required]
-        public string Name { get; set; }
+        public string FirstName { get; set; }
+
+        [Required]
+        public string LastName { get; set; }
 
         [MaxLength(9)]
         [Display(Name = "Home Phone")]
@@ -23,5 +26,14 @@ namespace MyLeasing.Web.Data.Entity
 
         [Required]
         public string Address { get; set; }
+
+        public string Name
+        {
+            get
+            {
+                return $"{FirstName} {LastName}";
+            }
+
+        }
     }
 }
