@@ -2,7 +2,7 @@
 
 namespace MyLeasing.Web.Data.Entity
 {
-    public class Owner
+    public class Owner : IEntity
     {
         public int Id { get; set; }
 
@@ -35,5 +35,7 @@ namespace MyLeasing.Web.Data.Entity
             }
 
         }
+
+        public User user { get; set; }
     }
 }

@@ -1,15 +1,13 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.HttpsPolicy;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using MyLeasing.Web.Data;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using MyLeasing.Web.Data.Entity;
+using MyLeasing.Web.Helpers;
 
 namespace MyLeasing.Web
 {
@@ -25,6 +23,17 @@ namespace MyLeasing.Web
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            services.AddIdentity<User, IdentityRole>(config =>
+            {
+                config.User.RequireUniqueEmail = true;
+                config.Password.RequireDigit = false;
+                config.Password.RequiredUniqueChars = 0;
+                config.Password.RequireUppercase = false;
+                config.Password.RequireLowercase = false;
+                config.Password.RequireNonAlphanumeric = false;
+                config.Password.RequiredLength = 6;
+            }).AddEntityFrameworkStores<DataContext>();
+
             services.AddDbContext<DataContext>(config =>
             {
                 config.UseSqlServer(this.Configuration.GetConnectionString("DefaultConnection"));
@@ -32,8 +41,8 @@ namespace MyLeasing.Web
             services.AddControllersWithViews();
 
             services.AddTransient<SeedDb>();
-
-            services.AddScoped<IRepository, Repository>();
+            services.AddScoped<IUserHelper, UserHelper>();
+            services.AddScoped<IOwnerRepository, OwnerRepository>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -54,6 +63,7 @@ namespace MyLeasing.Web
 
             app.UseRouting();
 
+            app.UseRequestLocalization();
             app.UseAuthorization();
 
             app.UseEndpoints(endpoints =>

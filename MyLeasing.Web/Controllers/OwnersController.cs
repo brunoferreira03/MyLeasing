@@ -2,38 +2,42 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using MyLeasing.Web.Data;
 using MyLeasing.Web.Data.Entity;
+using MyLeasing.Web.Helpers;
 
 namespace MyLeasing.Web.Controllers
 {
     public class OwnersController : Controller
     {
-        private readonly IRepository _repository;
+        private readonly IOwnerRepository _repository;
+        private readonly IUserHelper _userhelper;
 
-        public OwnersController(IRepository repository)
+        public OwnersController(IOwnerRepository repository, IUserHelper userhelper)
         {
             _repository = repository;
+            _userhelper = userhelper;
         }
 
         // GET: Owners
-        public async Task<IActionResult> Index()
+        public IActionResult Index()
         {
-            return View(_repository.GetOwners());
+            return View(_repository.GetAll().OrderBy(o => o.FirstName).ThenBy(o => o.LastName));
         }
 
         // GET: Owners/Details/5
-        public IActionResult Details(int? id)
+        public async Task<IActionResult> Details(int? id)
         {
             if (id == null)
             {
                 return NotFound();
             }
 
-            var owner = _repository.GetOwner(id.Value);
+            var owner = await _repository.GetByIdAsync(id.Value);
             if (owner == null)
             {
                 return NotFound();
@@ -57,8 +61,17 @@ namespace MyLeasing.Web.Controllers
         {
             if (ModelState.IsValid)
             {
-                _repository.AddOwner(owner);
-                await _repository.SaveAllAsync();
+                owner.user = new User
+                {
+                    Document = owner.Document,
+                    FirstName = owner.FirstName,
+                    LastName = owner.LastName,
+                    Address = owner.Address,
+                };
+                await _repository.CreateAsync(owner);
+
+                await _userhelper.AddUserAsync(owner.user, "123456");
+
                 return RedirectToAction(nameof(Index));
             }
             return View(owner);
@@ -71,7 +84,8 @@ namespace MyLeasing.Web.Controllers
             {
                 return NotFound();
             }
-            var owner = _repository.GetOwner(id.Value);
+            var owner = await _repository.GetByIdAsync(id.Value);
+            
 
             if (owner == null)
             {
@@ -96,12 +110,12 @@ namespace MyLeasing.Web.Controllers
             {
                 try
                 {
-                    _repository.UpdateOwner(owner);
-                    await _repository.SaveAllAsync();
+                    await _repository.UpdateAsync(owner);
+
                 }
                 catch (DbUpdateConcurrencyException)
                 {
-                    if (_repository.OwnerExists(owner.Id))
+                    if (await _repository.ExistAsync(owner.Id))
                     {
                         return NotFound();
                     }
@@ -116,14 +130,14 @@ namespace MyLeasing.Web.Controllers
         }
 
         // GET: Owners/Delete/5
-        public IActionResult Delete(int? id)
+        public async Task<IActionResult> Delete(int? id)
         {
             if (id == null)
             {
                 return NotFound();
             }
 
-            var owner = _repository.GetOwner(id.Value);
+            var owner = await _repository.GetByIdAsync(id.Value);
             if (owner == null)
             {
                 return NotFound();
@@ -137,9 +151,8 @@ namespace MyLeasing.Web.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            var owner = _repository.GetOwner(id);
-            _repository.RemoveOwner(owner);
-            await _repository.SaveAllAsync();
+            var owner = await _repository.GetByIdAsync(id);
+            await _repository.DeleteAsync(owner);
             return RedirectToAction(nameof(Index));
         }
     }
