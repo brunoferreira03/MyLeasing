@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.CodeAnalysis;
 using MyLeasing.Web.Data.Entity;
 using MyLeasing.Web.Helpers;
 using System;
@@ -15,7 +16,7 @@ namespace MyLeasing.Web.Data
 
         public SeedDb(DataContext context, IUserHelper userhelper)
         {
-           _context = context;
+            _context = context;
             _userHelper = userhelper;
             r = new Random();
         }
@@ -51,6 +52,31 @@ namespace MyLeasing.Web.Data
                 }
                 await _context.SaveChangesAsync();
             }
+
+            if (!_context.Lessee.Any())
+            {
+                for (int i = 0; i < 5; i++)
+                {
+                    seedLessees(i, user);
+                    await _context.SaveChangesAsync();
+                }
+            }
+        }
+
+        private void seedLessees(int i, User user)
+        {
+            string doc = r.Next(1000000, 9000000).ToString();
+            _context.Lessee.Add(new Lessee
+            {
+                Document = doc,
+                FirstName = "LesseeExemplo",
+                LastName = i.ToString(),
+                Fixed_Phone = "211111111",
+                Cell_Phone = "111111111",
+                Address = "Lisboa",
+                User = user,
+            });
+
         }
 
         private void seedOwners(int i, User User)
